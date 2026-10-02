@@ -123,6 +123,7 @@ export function CustomsAgentTariffFormPage() {
         currency_id: values.currency_id,
         name: values.name,
         is_optional: values.is_optional ?? false,
+        is_tax: values.is_tax ?? false,
         ...(values.fixed_amount !== '' && values.fixed_amount !== undefined ? { fixed_amount: values.fixed_amount } : {}),
         ...(values.rate_per_unit !== '' && values.rate_per_unit !== undefined ? { rate_per_unit: values.rate_per_unit } : {}),
         ...(values.rate_percentage !== '' && values.rate_percentage !== undefined ? { rate_percentage: values.rate_percentage } : {}),

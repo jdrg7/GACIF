@@ -33,6 +33,9 @@ export interface QuotationCostDetail {
   basis_value: string | null
   is_manual_override: boolean
   override_reason: string | null
+  // Impuesto de paso (ej. ISV): se muestra en el desglose pero no se suma al
+  // total_cost de la cotización.
+  is_tax: boolean
 }
 
 export interface AuditStateChange {
