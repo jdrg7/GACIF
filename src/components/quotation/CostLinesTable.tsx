@@ -26,6 +26,11 @@ export function CostLinesTable({ lines, subtotal, canEdit, onOverride, onRevert 
                   Override
                 </span>
               )}
+              {line.is_tax && (
+                <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
+                  Impuesto, no se suma
+                </span>
+              )}
             </td>
             <td className="py-1.5 text-right font-medium">{formatCurrency(Number(line.amount_usd))}</td>
             {canEdit && (

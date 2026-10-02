@@ -85,6 +85,7 @@ export const tariffComponentValueSchema = z
     sort_order: z.coerce.number().int().nonnegative().optional().or(z.literal('')),
     notes: z.string().trim().max(2000).optional().or(z.literal('')),
     is_optional: z.boolean().optional(),
+    is_tax: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
     const requireField = (field: 'fixed_amount' | 'rate_per_unit' | 'rate_percentage' | 'minimum_amount' | 'basis_unit', message: string) => {

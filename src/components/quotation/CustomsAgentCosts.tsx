@@ -1,4 +1,5 @@
 import { CostLinesTable } from './CostLinesTable'
+import { formatCurrency } from '../../utils/formatters'
 import { CostCategory, type QuotationCostDetail, type QuotationDetail } from '../../types/quotation'
 
 interface CustomsAgentCostsProps {
@@ -10,6 +11,7 @@ interface CustomsAgentCostsProps {
 
 export function CustomsAgentCosts({ quotation, canEdit, onOverride, onRevert }: CustomsAgentCostsProps) {
   const lines = quotation.cost_details.filter((line) => line.category === CostCategory.CUSTOMS_AGENT)
+  const taxAmount = lines.filter((line) => line.is_tax).reduce((sum, line) => sum + Number(line.amount_usd), 0)
 
   return (
     <div className="rounded-lg border border-gray-200 p-4">
@@ -21,6 +23,12 @@ export function CustomsAgentCosts({ quotation, canEdit, onOverride, onRevert }: 
         onOverride={onOverride}
         onRevert={onRevert}
       />
+      {taxAmount > 0 && (
+        <p className="mt-2 text-xs text-gray-400">
+          El subtotal no incluye {formatCurrency(taxAmount)} de impuesto (ISV), mostrado arriba solo de forma
+          informativa.
+        </p>
+      )}
     </div>
   )
 }

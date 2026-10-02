@@ -36,7 +36,14 @@ export function TariffComponentsTable({ components, onEdit, onDelete, onAdd }: T
               .sort((a, b) => a.sort_order - b.sort_order)
               .map((component) => (
                 <tr key={component.id} className="border-b border-gray-100">
-                  <td className="py-1.5 pr-2">{component.name}</td>
+                  <td className="py-1.5 pr-2">
+                    {component.name}
+                    {component.is_tax && (
+                      <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">
+                        Impuesto — no se suma
+                      </span>
+                    )}
+                  </td>
                   <td className="py-1.5 pr-2">{component.calculation_type}</td>
                   {components.some((c) => c.is_optional !== undefined) && (
                     <td className="py-1.5 pr-2">{component.is_optional ? 'Sí' : 'No'}</td>

@@ -30,6 +30,9 @@ export interface TariffComponent extends TariffComponentValue {
   sort_order: number
   notes: string | null
   is_optional?: boolean
+  // Solo aplica a componentes de agente aduanero (ej. ISV): se muestra en el
+  // desglose pero no se suma al costo total de la cotización.
+  is_tax?: boolean
 }
 
 export interface ConsolidatorTariff {
@@ -62,4 +65,5 @@ export type ComponentInput = TariffComponentValue & {
   sort_order?: number
   notes?: string
   is_optional?: boolean
+  is_tax?: boolean
 }

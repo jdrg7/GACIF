@@ -39,6 +39,7 @@ function toFormValues(component: TariffComponent | null): TariffComponentFormInp
       notes: '',
       tariff_ranges: [],
       is_optional: false,
+      is_tax: false,
     }
   }
   return {
@@ -55,6 +56,7 @@ function toFormValues(component: TariffComponent | null): TariffComponentFormInp
     notes: component.notes ?? '',
     tariff_ranges: component.tariff_ranges ?? [],
     is_optional: component.is_optional ?? false,
+    is_tax: component.is_tax ?? false,
   }
 }
 
@@ -89,10 +91,16 @@ export function ComponentFormModal({
         <Input label="Orden (opcional)" type="number" error={errors.sort_order?.message} {...register('sort_order')} />
         <Input label="Notas (opcional)" error={errors.notes?.message} {...register('notes')} />
         {showIsOptional && (
-          <label className="flex items-center gap-2 text-sm text-gray-700">
-            <input type="checkbox" {...register('is_optional')} />
-            Es un componente opcional (excluible por cotización)
-          </label>
+          <>
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input type="checkbox" {...register('is_optional')} />
+              Es un componente opcional (excluible por cotización)
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input type="checkbox" {...register('is_tax')} />
+              Es un impuesto (ej. ISV) — se muestra en el desglose pero no se suma al costo total
+            </label>
+          </>
         )}
 
         {error && <p className="text-sm text-red-600">{error}</p>}
