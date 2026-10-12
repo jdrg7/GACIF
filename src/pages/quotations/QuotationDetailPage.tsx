@@ -7,7 +7,6 @@ import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Spinner } from '../../components/ui/Spinner'
 import { CostBreakdown } from '../../components/quotation/CostBreakdown'
-import { ScenarioComparison } from '../../components/quotation/ScenarioComparison'
 import { ConsolidatorCosts } from '../../components/quotation/ConsolidatorCosts'
 import { CustomsAgentCosts } from '../../components/quotation/CustomsAgentCosts'
 import { StateTimeline } from '../../components/quotation/StateTimeline'
@@ -16,22 +15,9 @@ import { OverrideCostDetailModal } from '../../components/quotation/OverrideCost
 import { usePermissions } from '../../hooks/usePermissions'
 import { quotationsService } from '../../services/quotations.service'
 import { Permission } from '../../utils/permissions'
-import {
-  QuotationStatus,
-  SERVICE_LEVEL_LABEL,
-  TRANSPORT_LABEL,
-  type ServiceLevel,
-  type TransportType,
-} from '../../utils/constants'
+import { QuotationStatus } from '../../utils/constants'
 import { formatDate } from '../../utils/formatters'
 import type { QuotationCostDetail } from '../../types/quotation'
-
-// Antes de enviarse, cualquier recálculo usa tarifas vigentes; desde ENVIADA todo queda congelado.
-const PRE_SEND_STATUSES = new Set<QuotationStatus>([
-  QuotationStatus.BORRADOR,
-  QuotationStatus.PENDIENTE,
-  QuotationStatus.ALTERNATIVA,
-])
 
 interface OverrideTarget {
   line: QuotationCostDetail
@@ -46,7 +32,6 @@ export function QuotationDetailPage() {
   const [stateError, setStateError] = useState<string | null>(null)
   const [overrideTarget, setOverrideTarget] = useState<OverrideTarget | null>(null)
   const [overrideError, setOverrideError] = useState<string | null>(null)
-  const [scenarioError, setScenarioError] = useState<string | null>(null)
 
   const { data: quotation, isLoading } = useQuery({
     queryKey: ['quotations', id],
@@ -55,15 +40,8 @@ export function QuotationDetailPage() {
   })
 
   const changeStateMutation = useMutation({
-    mutationFn: ({
-      toStatus,
-      reason,
-      transportType,
-    }: {
-      toStatus: QuotationStatus
-      reason?: string
-      transportType?: TransportType
-    }) => quotationsService.changeState(id!, toStatus, reason, transportType),
+    mutationFn: ({ toStatus, reason }: { toStatus: QuotationStatus; reason?: string }) =>
+      quotationsService.changeState(id!, toStatus, reason),
     onSuccess: (updated) => {
       queryClient.setQueryData(['quotations', id], updated)
       queryClient.invalidateQueries({ queryKey: ['quotations'], exact: false })
@@ -75,25 +53,6 @@ export function QuotationDetailPage() {
         setStateError(error.response.data.error.message)
       } else {
         setStateError('No se pudo cambiar el estado')
-      }
-    },
-  })
-
-  const scenarioMutation = useMutation({
-    mutationFn: (input: { transportType: TransportType } | { serviceLevel: ServiceLevel }) =>
-      'transportType' in input
-        ? quotationsService.selectScenario(id!, input.transportType)
-        : quotationsService.updateServiceLevel(id!, input.serviceLevel),
-    onSuccess: (updated) => {
-      queryClient.setQueryData(['quotations', id], updated)
-      queryClient.invalidateQueries({ queryKey: ['quotations'], exact: false })
-      setScenarioError(null)
-    },
-    onError: (error) => {
-      if (axios.isAxiosError(error) && error.response?.data?.error?.message) {
-        setScenarioError(error.response.data.error.message)
-      } else {
-        setScenarioError('No se pudo actualizar la cotización')
       }
     },
   })
@@ -130,8 +89,6 @@ export function QuotationDetailPage() {
 
   const canEditCostDetails = hasPermission(Permission.QUOTATION_EDIT)
   const isPastDraft = quotation.status !== QuotationStatus.BORRADOR
-  // Elegir modo / nivel de servicio solo en borrador: después requiere permiso y razón especiales.
-  const canChangeScenario = canEditCostDetails && !isPastDraft
 
   function openOverride(line: QuotationCostDetail) {
     setOverrideError(null)
@@ -165,11 +122,8 @@ export function QuotationDetailPage() {
     >
       <div className="grid gap-4 rounded-lg border border-gray-200 p-4 text-sm sm:grid-cols-3">
         <div>
-          <span className="text-gray-500">Transporte elegido</span>
-          <p className="font-medium">
-            {TRANSPORT_LABEL[quotation.transport_type]}
-            {quotation.transport_type === 'AEREO' && ` · ${SERVICE_LEVEL_LABEL[quotation.service_level]}`}
-          </p>
+          <span className="text-gray-500">Transporte</span>
+          <p className="font-medium">{quotation.transport_type}</p>
         </div>
         <div>
           <span className="text-gray-500">OPP</span>
@@ -180,16 +134,6 @@ export function QuotationDetailPage() {
           <p className="font-medium">{formatDate(quotation.created_at)}</p>
         </div>
       </div>
-
-      <ScenarioComparison
-        quotation={quotation}
-        canEdit={canChangeScenario}
-        isFrozen={!PRE_SEND_STATUSES.has(quotation.status)}
-        isBusy={scenarioMutation.isPending}
-        error={scenarioError}
-        onSelect={(transportType) => scenarioMutation.mutate({ transportType })}
-        onChangeServiceLevel={(serviceLevel) => scenarioMutation.mutate({ serviceLevel })}
-      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <ConsolidatorCosts
@@ -224,13 +168,9 @@ export function QuotationDetailPage() {
         isOpen={isStateModalOpen}
         onClose={() => setStateModalOpen(false)}
         currentStatus={quotation.status}
-        currentTransport={quotation.transport_type}
-        scenarios={quotation.scenarios}
         isSubmitting={changeStateMutation.isPending}
         error={stateError}
-        onConfirm={(toStatus, reason, transportType) =>
-          changeStateMutation.mutate({ toStatus, reason, transportType })
-        }
+        onConfirm={(toStatus, reason) => changeStateMutation.mutate({ toStatus, reason })}
       />
 
       <OverrideCostDetailModal

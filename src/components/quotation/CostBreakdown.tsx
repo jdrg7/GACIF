@@ -29,6 +29,9 @@ export function CostBreakdown({ quotation }: CostBreakdownProps) {
   const cif = Number(quotation.cif)
   const subtotalAgent = Number(quotation.subtotal_customs_agent)
   const totalCost = Number(quotation.total_cost)
+  const marginAmount = Number(quotation.margin_amount)
+  const marginPercentage = Number(quotation.margin_percentage)
+  const salePrice = Number(quotation.sale_price)
   const nationalizationBase = Number(quotation.nationalization_base)
   const nationalizationPercentage = Number(quotation.nationalization_percentage)
 
@@ -64,8 +67,13 @@ export function CostBreakdown({ quotation }: CostBreakdownProps) {
           )}
         </section>
 
-        <section className="rounded-md bg-green-50 px-2.5 py-2">
+        <section className="flex flex-col gap-0.5 border-t border-gray-200 pt-3">
           <Row label="Costo total" value={formatCurrency(totalCost)} emphasize />
+          <Row label={`Margen (${formatPercentage(marginPercentage)})`} value={formatCurrency(marginAmount)} />
+        </section>
+
+        <section className="rounded-md bg-green-50 px-2.5 py-2">
+          <Row label="Precio de venta" value={formatCurrency(salePrice)} emphasize />
         </section>
 
         <section className="flex flex-col gap-0.5 border-t border-gray-200 pt-3 text-xs">

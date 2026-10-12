@@ -1,9 +1,5 @@
 @import "tailwindcss";
 
-/* El tema oscuro solo se activa con data-theme="dark" en un ancestro, nunca por la preferencia
-   del sistema operativo: la aplicación es siempre clara salvo que se active explícitamente. */
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
-
 :root {
   color-scheme: light;
 }

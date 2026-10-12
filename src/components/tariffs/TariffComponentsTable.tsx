@@ -43,23 +43,8 @@ export function TariffComponentsTable({ components, onEdit, onDelete, onAdd }: T
                         Impuesto — no se suma
                       </span>
                     )}
-                    {component.service_level && (
-                      <span className="ml-2 rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">
-                        {component.service_level === 'PRIORITY' ? 'Solo Priority' : 'Solo Regular'}
-                      </span>
-                    )}
                   </td>
-                  <td className="py-1.5 pr-2">
-                    {component.calculation_type}
-                    {component.basis_candidates && component.basis_candidates.length > 0 && (
-                      <span className="block text-xs text-gray-500">
-                        Mayor de:{' '}
-                        {component.basis_candidates
-                          .map((c) => `${c.basis} ×${c.rate}${c.minimum ? ` (mín ${c.minimum})` : ''}`)
-                          .join(' | ')}
-                      </span>
-                    )}
-                  </td>
+                  <td className="py-1.5 pr-2">{component.calculation_type}</td>
                   {components.some((c) => c.is_optional !== undefined) && (
                     <td className="py-1.5 pr-2">{component.is_optional ? 'Sí' : 'No'}</td>
                   )}

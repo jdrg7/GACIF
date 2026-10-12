@@ -18,7 +18,7 @@ import { productsService } from '../../services/master-data/products.service'
 import { palletsService } from '../../services/master-data/pallets.service'
 import { quotationsService } from '../../services/quotations.service'
 import { Permission } from '../../utils/permissions'
-import { ServiceLevel } from '../../utils/constants'
+import { TransportType } from '../../utils/constants'
 import {
   createQuotationSchema,
   type CreateQuotationFormInput,
@@ -61,7 +61,8 @@ export function QuotationCreatePage() {
   } = useForm<CreateQuotationFormInput, unknown, CreateQuotationFormValues>({
     resolver: zodResolver(createQuotationSchema),
     defaultValues: {
-      service_level: ServiceLevel.REGULAR,
+      transport_type: TransportType.AEREO,
+      other_international_costs: 0,
       products: [{ product_id: '', quantity: 1, fob_unit_price: 0 }],
     },
   })
@@ -88,7 +89,7 @@ export function QuotationCreatePage() {
     const input: CreateQuotationInput = {
       client_id: values.client_id,
       country_id: values.country_id,
-      service_level: values.service_level,
+      transport_type: values.transport_type,
       consolidator_id: values.consolidator_id,
       customs_agent_id: values.customs_agent_id,
       products: values.products.map((p) => ({
@@ -96,6 +97,8 @@ export function QuotationCreatePage() {
         quantity: p.quantity,
         fob_unit_price: p.fob_unit_price,
       })),
+      other_international_costs: values.other_international_costs,
+      margin_amount: values.margin_amount,
       ...(values.pallet_id ? { pallet_id: values.pallet_id } : {}),
       ...(values.opportunity_id ? { opportunity_id: Number(values.opportunity_id) } : {}),
       ...(values.observations ? { observations: values.observations } : {}),
@@ -123,6 +126,14 @@ export function QuotationCreatePage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <Select label="Cliente" options={namedOptions(clients.data)} error={errors.client_id?.message} {...register('client_id')} />
           <Select label="País" options={namedOptions(countries.data)} error={errors.country_id?.message} {...register('country_id')} />
+          <Select
+            label="Transporte"
+            options={[
+              { value: TransportType.AEREO, label: 'Aéreo' },
+              { value: TransportType.MARITIMO, label: 'Marítimo' },
+            ]}
+            {...register('transport_type')}
+          />
           <Select
             label="Consolidador"
             options={namedOptions(consolidators.data)}
@@ -184,20 +195,20 @@ export function QuotationCreatePage() {
           ))}
         </div>
 
-        <p className="rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-800">
-          Se calcula el envío aéreo y el marítimo a la vez (los que tengan tarifa vigente). Al crearla verás ambos y
-          podrás elegir con cuál seguir; por defecto queda el más barato.
-        </p>
-
         <div className="grid gap-4 sm:grid-cols-2">
-          <Select
-            label="Nivel de servicio aéreo"
-            options={[
-              { value: ServiceLevel.REGULAR, label: 'Regular' },
-              { value: ServiceLevel.PRIORITY, label: 'Priority (envío prioritario)' },
-            ]}
-            error={errors.service_level?.message}
-            {...register('service_level')}
+          <Input
+            label="Otros costos internacionales"
+            type="number"
+            step="0.01"
+            error={errors.other_international_costs?.message}
+            {...register('other_international_costs')}
+          />
+          <Input
+            label="Margen (USD)"
+            type="number"
+            step="0.01"
+            error={errors.margin_amount?.message}
+            {...register('margin_amount')}
           />
         </div>
 

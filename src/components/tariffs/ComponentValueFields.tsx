@@ -1,7 +1,6 @@
 import type { Control, FieldErrors, UseFormRegister, UseFormWatch } from 'react-hook-form'
 import { Input } from '../ui/Input'
 import { Select } from '../ui/Select'
-import { BasisCandidatesEditor } from './BasisCandidatesEditor'
 import { TariffRangesEditor } from './TariffRangesEditor'
 import { CalculationType, TariffBasis } from '../../utils/constants'
 import type { TariffComponentFormInput } from './tariff-component.schema'
@@ -31,18 +30,9 @@ interface ComponentValueFieldsProps {
   errors: FieldErrors<TariffComponentFormInput>
   control: Control<TariffComponentFormInput>
   currencyOptions: CurrencyOption[]
-  /** Solo los componentes de consolidador soportan MAX_OF con varias bases candidatas. */
-  showBasisCandidates?: boolean
 }
 
-export function ComponentValueFields({
-  register,
-  watch,
-  errors,
-  control,
-  currencyOptions,
-  showBasisCandidates = false,
-}: ComponentValueFieldsProps) {
+export function ComponentValueFields({ register, watch, errors, control, currencyOptions }: ComponentValueFieldsProps) {
   const calculationType = watch('calculation_type')
   const ranges = watch('tariff_ranges')
 
@@ -84,7 +74,6 @@ export function ComponentValueFields({
           <Input label="Tarifa por unidad" type="number" step="0.0001" error={errors.rate_per_unit?.message} {...register('rate_per_unit')} />
           <Input label="Monto mínimo" type="number" step="0.0001" error={errors.minimum_amount?.message} {...register('minimum_amount')} />
           <Select label="Base (KG/LB/CFT)" options={TARIFF_BASIS_OPTIONS} error={errors.basis_unit?.message} {...register('basis_unit')} />
-          {showBasisCandidates && <BasisCandidatesEditor control={control} register={register} errors={errors} />}
         </>
       )}
 
