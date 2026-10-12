@@ -21,6 +21,11 @@ export const TransportType = {
 
 export type TransportType = (typeof TransportType)[keyof typeof TransportType]
 
+export const TRANSPORT_LABEL: Record<TransportType, string> = {
+  AEREO: 'Aéreo',
+  MARITIMO: 'Marítimo',
+}
+
 // Espejo de src/modules/quotations/quotations.state-machine.ts del backend — solo
 // para UX (qué opciones ofrecer); el backend es la única fuente de verdad que valida.
 export const QUOTATION_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> = {
@@ -64,6 +69,29 @@ export const TariffBasis = {
 } as const
 
 export type TariffBasis = (typeof TariffBasis)[keyof typeof TariffBasis]
+
+// Bases de un MAX_OF multi-base. VOL_* = peso volumétrico (CFT × 1728 / divisor de la tarifa).
+export const CandidateBasis = {
+  KG: 'KG',
+  LB: 'LB',
+  CFT: 'CFT',
+  VOL_KG: 'VOL_KG',
+  VOL_LB: 'VOL_LB',
+} as const
+
+export type CandidateBasis = (typeof CandidateBasis)[keyof typeof CandidateBasis]
+
+export const ServiceLevel = {
+  REGULAR: 'REGULAR',
+  PRIORITY: 'PRIORITY',
+} as const
+
+export type ServiceLevel = (typeof ServiceLevel)[keyof typeof ServiceLevel]
+
+export const SERVICE_LEVEL_LABEL: Record<ServiceLevel, string> = {
+  REGULAR: 'Regular',
+  PRIORITY: 'Priority',
+}
 
 export const RangeItemType = {
   fixed: 'fixed',
