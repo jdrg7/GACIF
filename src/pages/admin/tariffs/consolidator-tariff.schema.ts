@@ -8,10 +8,6 @@ export const consolidatorTariffHeaderSchema = z.object({
   name: z.string().trim().min(1, 'El nombre es requerido').max(255),
   valid_from: z.string().min(1, 'La fecha de inicio es requerida'),
   valid_until: z.string().optional().or(z.literal('')),
-  volumetric_divisor: z
-    .string()
-    .min(1, 'El divisor volumétrico es requerido')
-    .refine((value) => Number(value) > 0 && Number(value) <= 10000, 'Debe ser un número entre 0 y 10000'),
   notes: z.string().trim().max(2000).optional().or(z.literal('')),
   is_active: z.boolean(),
 })

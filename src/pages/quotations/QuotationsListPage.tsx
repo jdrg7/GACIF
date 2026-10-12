@@ -9,7 +9,7 @@ import { Select } from '../../components/ui/Select'
 import { usePagination } from '../../hooks/usePagination'
 import { usePermissions } from '../../hooks/usePermissions'
 import { quotationsService } from '../../services/quotations.service'
-import { QuotationStatus, TRANSPORT_LABEL } from '../../utils/constants'
+import { QuotationStatus } from '../../utils/constants'
 import { Permission } from '../../utils/permissions'
 import { formatCurrency, formatDate } from '../../utils/formatters'
 import type { Quotation } from '../../types/quotation'
@@ -59,19 +59,9 @@ export function QuotationsListPage() {
         columns={[
           { header: 'Referencia', render: (row) => row.reference_number },
           { header: 'Estado', render: (row) => <Badge status={row.status} /> },
-          {
-            header: 'Transporte',
-            render: (row) => (
-              <span>
-                {TRANSPORT_LABEL[row.transport_type]}
-                {row.transport_type === 'AEREO' && row.service_level === 'PRIORITY' && (
-                  <span className="ml-1.5 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">Priority</span>
-                )}
-                {!row.scenario_chosen && <span className="ml-1.5 text-xs text-gray-400">sugerido</span>}
-              </span>
-            ),
-          },
+          { header: 'Transporte', render: (row) => row.transport_type },
           { header: 'Total', render: (row) => formatCurrency(Number(row.total_cost)) },
+          { header: 'Venta', render: (row) => formatCurrency(Number(row.sale_price)) },
           { header: 'Creada', render: (row) => formatDate(row.created_at) },
           {
             header: '',

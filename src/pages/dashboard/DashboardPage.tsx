@@ -58,10 +58,10 @@ export function DashboardPage() {
     counts[q.status] = (counts[q.status] ?? 0) + 1
     if (!CLOSED_STATUSES.has(q.status)) {
       activeCount += 1
-      pipelineValue += Number(q.total_cost)
+      pipelineValue += Number(q.sale_price)
     }
     if (WON_STATUSES.has(q.status)) {
-      wonValue += Number(q.total_cost)
+      wonValue += Number(q.sale_price)
     }
   }
 
@@ -106,7 +106,7 @@ export function DashboardPage() {
                       <Badge status={q.status} />
                     </span>
                     <span className="flex items-center gap-3 text-gray-500">
-                      <span>{formatCurrency(Number(q.total_cost))}</span>
+                      <span>{formatCurrency(Number(q.sale_price))}</span>
                       <span className="text-xs">{formatDate(q.created_at)}</span>
                     </span>
                   </button>

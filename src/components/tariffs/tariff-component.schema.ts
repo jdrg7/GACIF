@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { CalculationType, CandidateBasis, RangeItemType, ServiceLevel, TariffBasis } from '../../utils/constants'
+import { CalculationType, RangeItemType, TariffBasis } from '../../utils/constants'
 
 const RANGE_TYPES = new Set<CalculationType>([
   CalculationType.RANGE_KG,
@@ -54,18 +54,6 @@ export const tariffRangeItemSchema = z
     }
   })
 
-export const basisCandidateItemSchema = z.object({
-  basis: z.enum([
-    CandidateBasis.KG,
-    CandidateBasis.LB,
-    CandidateBasis.CFT,
-    CandidateBasis.VOL_KG,
-    CandidateBasis.VOL_LB,
-  ]),
-  rate: z.coerce.number().positive('Debe ser mayor a 0'),
-  minimum: z.coerce.number().nonnegative('Debe ser 0 o mayor').optional().or(z.literal('')),
-})
-
 export const tariffComponentValueSchema = z
   .object({
     calculation_type: z.enum([
@@ -93,8 +81,6 @@ export const tariffComponentValueSchema = z
     maximum_amount: optionalPositive,
     basis_unit: z.enum([TariffBasis.KG, TariffBasis.LB, TariffBasis.CFT]).optional().or(z.literal('')),
     tariff_ranges: z.array(tariffRangeItemSchema).optional(),
-    basis_candidates: z.array(basisCandidateItemSchema).optional(),
-    service_level: z.enum([ServiceLevel.REGULAR, ServiceLevel.PRIORITY]).optional().or(z.literal('')),
     name: z.string().trim().min(1, 'El nombre es requerido').max(255),
     sort_order: z.coerce.number().int().nonnegative().optional().or(z.literal('')),
     notes: z.string().trim().max(2000).optional().or(z.literal('')),
@@ -115,12 +101,9 @@ export const tariffComponentValueSchema = z
     } else if (data.calculation_type === CalculationType.PER_VALUE) {
       requireField('rate_percentage', 'rate_percentage es requerido para PER_VALUE')
     } else if (data.calculation_type === CalculationType.MAX_OF) {
-      // Con bases candidatas, cada una trae su tarifa y mínimo: no hace falta la forma de una sola base.
-      if (!data.basis_candidates || data.basis_candidates.length === 0) {
-        requireField('rate_per_unit', 'rate_per_unit es requerido para MAX_OF')
-        requireField('minimum_amount', 'minimum_amount es requerido para MAX_OF')
-        requireField('basis_unit', 'basis_unit es requerido para MAX_OF (KG, LB o CFT)')
-      }
+      requireField('rate_per_unit', 'rate_per_unit es requerido para MAX_OF')
+      requireField('minimum_amount', 'minimum_amount es requerido para MAX_OF')
+      requireField('basis_unit', 'basis_unit es requerido para MAX_OF (KG, LB o CFT)')
     } else if (RANGE_TYPES.has(data.calculation_type)) {
       if (!data.tariff_ranges || data.tariff_ranges.length === 0) {
         ctx.addIssue({ code: 'custom', path: ['tariff_ranges'], message: `tariff_ranges es requerido para ${data.calculation_type}` })

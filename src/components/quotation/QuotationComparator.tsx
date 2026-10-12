@@ -1,5 +1,4 @@
 import { Badge } from '../ui/Badge'
-import { SERVICE_LEVEL_LABEL, TRANSPORT_LABEL } from '../../utils/constants'
 import { formatCurrency, formatDate, formatPercentage } from '../../utils/formatters'
 import type { Quotation } from '../../types/quotation'
 
@@ -13,30 +12,26 @@ interface MetricRow {
 
 const ROWS: MetricRow[] = [
   { label: 'Estado', render: (q) => q.status },
-  {
-    label: 'Transporte',
-    render: (q) =>
-      `${TRANSPORT_LABEL[q.transport_type]}${
-        q.transport_type === 'AEREO' ? ` · ${SERVICE_LEVEL_LABEL[q.service_level]}` : ''
-      }${q.scenario_chosen ? '' : ' (sugerido)'}`,
-  },
-  {
-    label: 'Otro modo',
-    render: (q) => {
-      const other = q.scenarios?.find((s) => s.transport_type !== q.transport_type)
-      if (!other) return 'No disponible'
-      const diff = Number(other.total_cost) - Number(q.total_cost)
-      return `${TRANSPORT_LABEL[other.transport_type]} ${formatCurrency(Number(other.total_cost))} (${
-        diff >= 0 ? '+' : '-'
-      }${formatCurrency(Math.abs(diff))})`
-    },
-  },
+  { label: 'Transporte', render: (q) => q.transport_type },
   { label: 'FOB', render: (q) => formatCurrency(Number(q.fob)) },
   { label: 'Seguro', render: (q) => formatCurrency(Number(q.insurance)) },
   { label: 'Subtotal consolidador', render: (q) => formatCurrency(Number(q.subtotal_consolidator)), value: (q) => Number(q.subtotal_consolidator), better: 'min' },
   { label: 'CIF', render: (q) => formatCurrency(Number(q.cif)), value: (q) => Number(q.cif), better: 'min', emphasize: true },
   { label: 'Subtotal agente aduanero', render: (q) => formatCurrency(Number(q.subtotal_customs_agent)), value: (q) => Number(q.subtotal_customs_agent), better: 'min' },
   { label: 'Costo total', render: (q) => formatCurrency(Number(q.total_cost)), value: (q) => Number(q.total_cost), better: 'min', emphasize: true },
+  {
+    label: 'Margen',
+    render: (q) => `${formatCurrency(Number(q.margin_amount))} (${formatPercentage(Number(q.margin_percentage))})`,
+    value: (q) => Number(q.margin_amount),
+    better: 'max',
+  },
+  {
+    label: 'Precio de venta',
+    render: (q) => formatCurrency(Number(q.sale_price)),
+    value: (q) => Number(q.sale_price),
+    better: 'min',
+    emphasize: true,
+  },
   { label: 'Nacionalización', render: (q) => formatPercentage(Number(q.nationalization_percentage)) },
   { label: 'Creada', render: (q) => formatDate(q.created_at) },
 ]
@@ -73,8 +68,8 @@ export function QuotationComparator({ quotations, onSelect }: QuotationComparato
     return <p className="text-sm text-gray-400">No hay cotizaciones para esta oportunidad</p>
   }
 
-  const totalCosts = quotations.map((q) => ({ id: q.id, reference: q.reference_number, price: Number(q.total_cost) }))
-  const sorted = [...totalCosts].sort((a, b) => a.price - b.price)
+  const salePrices = quotations.map((q) => ({ id: q.id, reference: q.reference_number, price: Number(q.sale_price) }))
+  const sorted = [...salePrices].sort((a, b) => a.price - b.price)
   const recommended = quotations.length > 1 ? sorted[0] : null
   const runnerUp = quotations.length > 1 ? sorted[1] : null
   const savings = recommended && runnerUp ? runnerUp.price - recommended.price : 0
@@ -86,7 +81,7 @@ export function QuotationComparator({ quotations, onSelect }: QuotationComparato
     <div className="flex flex-col gap-4">
       {recommended && runnerUp && (
         <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-900">
-          <span className="font-medium">Recomendada: {recommended.reference}</span> — costo total más bajo (
+          <span className="font-medium">Recomendada: {recommended.reference}</span> — precio de venta más bajo (
           {formatCurrency(recommended.price)}), {formatCurrency(savings)} ({formatPercentage(savingsPct)}) menos que la
           siguiente mejor opción ({runnerUp.reference}). En cada tarjeta, lo resaltado en verde indica en qué métrica
           gana esa cotización; el resto muestra cuánto le falta para igualar al mejor.
