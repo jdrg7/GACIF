@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { TransportType } from '../../utils/constants'
+import { ServiceLevel } from '../../utils/constants'
 
 const quotationProductSchema = z.object({
   product_id: z.string().min(1, 'Selecciona un producto'),
@@ -11,13 +11,11 @@ export const createQuotationSchema = z.object({
   opportunity_id: z.coerce.number().int().positive().optional().or(z.literal('')),
   client_id: z.string().min(1, 'Selecciona un cliente'),
   country_id: z.string().min(1, 'Selecciona un país'),
-  transport_type: z.nativeEnum(TransportType),
+  service_level: z.nativeEnum(ServiceLevel),
   consolidator_id: z.string().min(1, 'Selecciona un consolidador'),
   customs_agent_id: z.string().min(1, 'Selecciona un agente aduanero'),
   pallet_id: z.string().optional(),
   products: z.array(quotationProductSchema).min(1, 'Agrega al menos un producto'),
-  other_international_costs: z.coerce.number().nonnegative().default(0),
-  margin_amount: z.coerce.number().nonnegative('El margen no puede ser negativo'),
   observations: z.string().trim().max(2000).optional(),
   internal_notes: z.string().trim().max(2000).optional(),
 })

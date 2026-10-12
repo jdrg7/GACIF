@@ -1,4 +1,5 @@
 import { CostLinesTable } from './CostLinesTable'
+import { TRANSPORT_LABEL } from '../../utils/constants'
 import { CostCategory, type QuotationCostDetail, type QuotationDetail } from '../../types/quotation'
 
 interface ConsolidatorCostsProps {
@@ -13,7 +14,9 @@ export function ConsolidatorCosts({ quotation, canEdit, onOverride, onRevert }: 
 
   return (
     <div className="rounded-lg border border-gray-200 p-4">
-      <h3 className="mb-3 text-sm font-medium text-gray-700">Costos del consolidador</h3>
+      <h3 className="mb-3 text-sm font-medium text-gray-700">
+        Costos del consolidador — {TRANSPORT_LABEL[quotation.transport_type]}
+      </h3>
       <CostLinesTable
         lines={lines}
         subtotal={Number(quotation.subtotal_consolidator)}
