@@ -3,8 +3,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
+import { Select } from '../ui/Select'
 import { ComponentValueFields } from './ComponentValueFields'
-import { CalculationType } from '../../utils/constants'
+import { CalculationType, ServiceLevel } from '../../utils/constants'
 import {
   tariffComponentValueSchema,
   type TariffComponentFormInput,
@@ -12,11 +13,19 @@ import {
 } from './tariff-component.schema'
 import type { TariffComponent } from '../../types/tariff'
 
+const SERVICE_LEVEL_OPTIONS = [
+  { value: '', label: 'Ambos (Regular y Priority)' },
+  { value: ServiceLevel.REGULAR, label: 'Solo Regular' },
+  { value: ServiceLevel.PRIORITY, label: 'Solo Priority' },
+]
+
 interface ComponentFormModalProps {
   isOpen: boolean
   onClose: () => void
   component: TariffComponent | null
   showIsOptional: boolean
+  /** Solo consolidador: nivel de servicio y bases candidatas de MAX_OF. */
+  showConsolidatorFields?: boolean
   currencyOptions: { value: string; label: string }[]
   onSubmit: (values: TariffComponentFormValues) => void
   isSubmitting?: boolean
@@ -38,6 +47,8 @@ function toFormValues(component: TariffComponent | null): TariffComponentFormInp
       sort_order: '',
       notes: '',
       tariff_ranges: [],
+      basis_candidates: [],
+      service_level: '',
       is_optional: false,
       is_tax: false,
     }
@@ -55,6 +66,12 @@ function toFormValues(component: TariffComponent | null): TariffComponentFormInp
     sort_order: component.sort_order,
     notes: component.notes ?? '',
     tariff_ranges: component.tariff_ranges ?? [],
+    basis_candidates: (component.basis_candidates ?? []).map((candidate) => ({
+      basis: candidate.basis,
+      rate: candidate.rate,
+      minimum: candidate.minimum ?? '',
+    })),
+    service_level: component.service_level ?? '',
     is_optional: component.is_optional ?? false,
     is_tax: component.is_tax ?? false,
   }
@@ -65,6 +82,7 @@ export function ComponentFormModal({
   onClose,
   component,
   showIsOptional,
+  showConsolidatorFields = false,
   currencyOptions,
   onSubmit,
   isSubmitting,
@@ -87,7 +105,22 @@ export function ComponentFormModal({
     <Modal isOpen={isOpen} onClose={onClose} title={component ? 'Editar componente' : 'Nuevo componente'}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto pr-1">
         <Input label="Nombre" error={errors.name?.message} {...register('name')} />
-        <ComponentValueFields register={register} watch={watch} errors={errors} control={control} currencyOptions={currencyOptions} />
+        <ComponentValueFields
+          register={register}
+          watch={watch}
+          errors={errors}
+          control={control}
+          currencyOptions={currencyOptions}
+          showBasisCandidates={showConsolidatorFields}
+        />
+        {showConsolidatorFields && (
+          <Select
+            label="Nivel de servicio"
+            options={SERVICE_LEVEL_OPTIONS}
+            error={errors.service_level?.message}
+            {...register('service_level')}
+          />
+        )}
         <Input label="Orden (opcional)" type="number" error={errors.sort_order?.message} {...register('sort_order')} />
         <Input label="Notas (opcional)" error={errors.notes?.message} {...register('notes')} />
         {showIsOptional && (

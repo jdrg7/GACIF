@@ -9,12 +9,14 @@ interface CreateTariffInput {
   name: string
   valid_from: string
   valid_until?: string
+  volumetric_divisor?: number
   notes?: string
 }
 
 interface UpdateTariffInput {
   name?: string
   valid_until?: string
+  volumetric_divisor?: number
   notes?: string
   is_active?: boolean
 }

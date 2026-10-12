@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router'
 import axios from 'axios'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
+import { Logo } from '../../components/ui/Logo'
 import { useAuthStore } from '../../store/auth.store'
 import * as authService from '../../services/auth.service'
 import { loginSchema, type LoginFormValues } from './login.schema'
@@ -38,7 +39,10 @@ export function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center">
       <form onSubmit={handleSubmit(onSubmit)} className="flex w-full max-w-sm flex-col gap-4">
-        <h1 className="text-xl font-medium">GACI</h1>
+        <div className="flex flex-col gap-3">
+          <Logo className="h-12 w-auto self-start" />
+          <h1 className="text-xl font-medium">GACI</h1>
+        </div>
 
         <Input label="Email" type="email" autoComplete="email" error={errors.email?.message} {...register('email')} />
         <Input

@@ -1,5 +1,29 @@
 import { formatCurrency } from '../../utils/formatters'
-import type { QuotationCostDetail } from '../../types/quotation'
+import { CostCategory, type QuotationCostDetail } from '../../types/quotation'
+
+const BASIS_TEXT: Record<string, { label: string; unit: string }> = {
+  KG: { label: 'peso real', unit: 'kg' },
+  VOL_KG: { label: 'peso volumétrico', unit: 'kg' },
+  LB: { label: 'peso real', unit: 'lb' },
+  VOL_LB: { label: 'peso volumétrico', unit: 'lb' },
+  CFT: { label: 'volumen', unit: 'CFT' },
+}
+
+// Qué base cobró la línea del consolidador (volumen o peso) o si aplicó el cobro mínimo.
+function basisNote(line: QuotationCostDetail): string | null {
+  if (line.category !== CostCategory.CONSOLIDATOR || !line.calculation_basis) return null
+  const info = BASIS_TEXT[line.calculation_basis]
+  if (!info) return null
+
+  const candidates = line.calculation_snapshot?.candidates
+  const amount = Number(line.original_amount)
+  if (candidates && candidates.length > 0 && candidates.every((c) => c.rate * c.quantity < amount - 0.0001)) {
+    return 'Cobro mínimo'
+  }
+
+  const quantity = line.basis_value ? Number(line.basis_value) : null
+  return `Por ${info.label}${quantity !== null ? ` · ${quantity.toFixed(2)} ${info.unit}` : ''}`
+}
 
 interface CostLinesTableProps {
   lines: QuotationCostDetail[]
@@ -31,6 +55,7 @@ export function CostLinesTable({ lines, subtotal, canEdit, onOverride, onRevert 
                   Impuesto, no se suma
                 </span>
               )}
+              {basisNote(line) && <span className="block text-xs text-gray-400">{basisNote(line)}</span>}
             </td>
             <td className="py-1.5 text-right font-medium">{formatCurrency(Number(line.amount_usd))}</td>
             {canEdit && (
