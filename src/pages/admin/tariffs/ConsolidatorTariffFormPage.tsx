@@ -16,7 +16,7 @@ import { consolidatorsService } from '../../../services/master-data/consolidator
 import { countriesService } from '../../../services/master-data/countries.service'
 import { currenciesService } from '../../../services/master-data/currencies.service'
 import { Permission } from '../../../utils/permissions'
-import { TransportType } from '../../../utils/constants'
+import { CalculationType, TransportType } from '../../../utils/constants'
 import { consolidatorTariffHeaderSchema, type ConsolidatorTariffHeaderFormValues } from './consolidator-tariff.schema'
 import type { TariffComponentFormValues } from '../../../components/tariffs/tariff-component.schema'
 import type { TariffComponent } from '../../../types/tariff'
@@ -76,6 +76,7 @@ export function ConsolidatorTariffFormPage() {
     { name: 'name', label: 'Nombre de la tarifa', type: 'text' },
     { name: 'valid_from', label: 'Vigente desde', type: 'text' },
     { name: 'valid_until', label: 'Vigente hasta (opcional)', type: 'text' },
+    { name: 'volumetric_divisor', label: 'Divisor volumétrico (pulgadas³ por libra; PFI = 166)', type: 'text' },
     { name: 'notes', label: 'Notas', type: 'textarea' },
   ]
 
@@ -89,6 +90,7 @@ export function ConsolidatorTariffFormPage() {
           name: data.name,
           valid_from: data.valid_from.slice(0, 10),
           valid_until: data.valid_until ? data.valid_until.slice(0, 10) : '',
+          volumetric_divisor: String(Number(data.volumetric_divisor)),
           notes: data.notes ?? '',
           is_active: data.is_active,
         }
@@ -99,6 +101,7 @@ export function ConsolidatorTariffFormPage() {
           name: '',
           valid_from: new Date().toISOString().slice(0, 10),
           valid_until: '',
+          volumetric_divisor: '166',
           notes: '',
           is_active: true,
         },
@@ -110,6 +113,7 @@ export function ConsolidatorTariffFormPage() {
         ? consolidatorTariffsService.update(id!, {
             name: values.name,
             valid_until: values.valid_until || undefined,
+            volumetric_divisor: Number(values.volumetric_divisor),
             notes: values.notes || undefined,
             is_active: values.is_active,
           })
@@ -120,6 +124,7 @@ export function ConsolidatorTariffFormPage() {
             name: values.name,
             valid_from: values.valid_from,
             valid_until: values.valid_until || undefined,
+            volumetric_divisor: Number(values.volumetric_divisor),
             notes: values.notes || undefined,
           }),
     onSuccess: (saved) => {
@@ -143,6 +148,20 @@ export function ConsolidatorTariffFormPage() {
         ...(values.basis_unit !== '' && values.basis_unit !== undefined ? { basis_unit: values.basis_unit } : {}),
         ...(values.sort_order !== '' && values.sort_order !== undefined ? { sort_order: values.sort_order } : {}),
         ...(values.notes ? { notes: values.notes } : {}),
+        ...(values.service_level !== '' && values.service_level !== undefined
+          ? { service_level: values.service_level }
+          : {}),
+        ...(values.calculation_type === CalculationType.MAX_OF &&
+        values.basis_candidates &&
+        values.basis_candidates.length > 0
+          ? {
+              basis_candidates: values.basis_candidates.map((c) => ({
+                basis: c.basis,
+                rate: c.rate,
+                ...(c.minimum !== '' && c.minimum !== undefined ? { minimum: c.minimum } : {}),
+              })),
+            }
+          : {}),
         ...(values.tariff_ranges && values.tariff_ranges.length > 0
           ? {
               tariff_ranges: values.tariff_ranges.map((r) => ({
@@ -227,6 +246,7 @@ export function ConsolidatorTariffFormPage() {
             onClose={() => setComponentModal({ open: false, component: null })}
             component={componentModal.component}
             showIsOptional={false}
+            showConsolidatorFields
             currencyOptions={currencyOptions}
             isSubmitting={componentMutation.isPending}
             error={componentError}
