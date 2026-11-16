@@ -12,7 +12,6 @@ import { ConsolidatorCosts } from '../../components/quotation/ConsolidatorCosts'
 import { CustomsAgentCosts } from '../../components/quotation/CustomsAgentCosts'
 import { StateTimeline } from '../../components/quotation/StateTimeline'
 import { StateChangeModal } from '../../components/quotation/StateChangeModal'
-import { OverrideCostDetailModal } from '../../components/quotation/OverrideCostDetailModal'
 import { usePermissions } from '../../hooks/usePermissions'
 import { quotationsService } from '../../services/quotations.service'
 import { Permission } from '../../utils/permissions'
@@ -24,7 +23,6 @@ import {
   type TransportType,
 } from '../../utils/constants'
 import { formatDate } from '../../utils/formatters'
-import type { QuotationCostDetail } from '../../types/quotation'
 
 // Antes de enviarse, cualquier recálculo usa tarifas vigentes; desde ENVIADA todo queda congelado.
 const PRE_SEND_STATUSES = new Set<QuotationStatus>([
@@ -33,20 +31,14 @@ const PRE_SEND_STATUSES = new Set<QuotationStatus>([
   QuotationStatus.ALTERNATIVA,
 ])
 
-interface OverrideTarget {
-  line: QuotationCostDetail
-  mode: 'override' | 'revert'
-}
-
 export function QuotationDetailPage() {
   const { id } = useParams<{ id: string }>()
   const queryClient = useQueryClient()
   const { hasPermission } = usePermissions()
   const [isStateModalOpen, setStateModalOpen] = useState(false)
   const [stateError, setStateError] = useState<string | null>(null)
-  const [overrideTarget, setOverrideTarget] = useState<OverrideTarget | null>(null)
-  const [overrideError, setOverrideError] = useState<string | null>(null)
   const [scenarioError, setScenarioError] = useState<string | null>(null)
+  const [previewTransportType, setPreviewTransportType] = useState<TransportType | null>(null)
 
   const { data: quotation, isLoading } = useQuery({
     queryKey: ['quotations', id],
@@ -98,28 +90,6 @@ export function QuotationDetailPage() {
     },
   })
 
-  const overrideMutation = useMutation({
-    mutationFn: ({ amountUsd, reason }: { amountUsd?: number; reason?: string }) => {
-      if (!overrideTarget) throw new Error('No hay línea seleccionada')
-      return overrideTarget.mode === 'override'
-        ? quotationsService.overrideCostDetail(id!, overrideTarget.line.id, amountUsd!, reason!)
-        : quotationsService.revertCostDetail(id!, overrideTarget.line.id, reason)
-    },
-    onSuccess: (updated) => {
-      queryClient.setQueryData(['quotations', id], updated)
-      queryClient.invalidateQueries({ queryKey: ['quotations'], exact: false })
-      setOverrideTarget(null)
-      setOverrideError(null)
-    },
-    onError: (error) => {
-      if (axios.isAxiosError(error) && error.response?.data?.error?.message) {
-        setOverrideError(error.response.data.error.message)
-      } else {
-        setOverrideError('No se pudo completar la operación')
-      }
-    },
-  })
-
   if (isLoading || !quotation) {
     return (
       <div className="flex justify-center py-12">
@@ -132,16 +102,25 @@ export function QuotationDetailPage() {
   const isPastDraft = quotation.status !== QuotationStatus.BORRADOR
   // Elegir modo / nivel de servicio solo en borrador: después requiere permiso y razón especiales.
   const canChangeScenario = canEditCostDetails && !isPastDraft
-
-  function openOverride(line: QuotationCostDetail) {
-    setOverrideError(null)
-    setOverrideTarget({ line, mode: 'override' })
-  }
-
-  function openRevert(line: QuotationCostDetail) {
-    setOverrideError(null)
-    setOverrideTarget({ line, mode: 'revert' })
-  }
+  const displayedScenario = quotation.scenarios.find(
+    (scenario) => scenario.transport_type === (previewTransportType ?? quotation.transport_type),
+  )
+  const displayedQuotation = displayedScenario
+    ? {
+        ...quotation,
+        transport_type: displayedScenario.transport_type,
+        subtotal_consolidator: displayedScenario.subtotal_consolidator,
+        cif: displayedScenario.cif,
+        subtotal_customs_agent: displayedScenario.subtotal_customs_agent,
+        total_cost: displayedScenario.total_cost,
+        margin_amount: displayedScenario.margin_amount,
+        margin_percentage: displayedScenario.margin_percentage,
+        sale_price: displayedScenario.sale_price,
+        nationalization_base: displayedScenario.nationalization_base,
+        nationalization_percentage: displayedScenario.nationalization_percentage,
+        cost_details: displayedScenario.cost_details ?? quotation.cost_details,
+      }
+    : quotation
 
   return (
     <PageWrapper
@@ -183,6 +162,8 @@ export function QuotationDetailPage() {
 
       <ScenarioComparison
         quotation={quotation}
+        selectedTransportType={displayedQuotation.transport_type}
+        onPreviewSelect={setPreviewTransportType}
         canEdit={canChangeScenario}
         isFrozen={!PRE_SEND_STATUSES.has(quotation.status)}
         isBusy={scenarioMutation.isPending}
@@ -192,21 +173,11 @@ export function QuotationDetailPage() {
       />
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <ConsolidatorCosts
-          quotation={quotation}
-          canEdit={canEditCostDetails}
-          onOverride={openOverride}
-          onRevert={openRevert}
-        />
-        <CustomsAgentCosts
-          quotation={quotation}
-          canEdit={canEditCostDetails}
-          onOverride={openOverride}
-          onRevert={openRevert}
-        />
+        <ConsolidatorCosts quotation={displayedQuotation} />
+        <CustomsAgentCosts quotation={displayedQuotation} />
       </div>
 
-      <CostBreakdown quotation={quotation} />
+      <CostBreakdown quotation={displayedQuotation} />
 
       {quotation.observations && (
         <div className="rounded-lg border border-gray-200 p-4">
@@ -233,16 +204,6 @@ export function QuotationDetailPage() {
         }
       />
 
-      <OverrideCostDetailModal
-        key={overrideTarget ? `${overrideTarget.line.id}-${overrideTarget.mode}` : 'closed'}
-        line={overrideTarget?.line ?? null}
-        mode={overrideTarget?.mode ?? 'override'}
-        reasonRequired={overrideTarget?.mode === 'override' || isPastDraft}
-        onClose={() => setOverrideTarget(null)}
-        isSubmitting={overrideMutation.isPending}
-        error={overrideError}
-        onConfirm={(amountUsd, reason) => overrideMutation.mutate({ amountUsd, reason })}
-      />
     </PageWrapper>
   )
 }
