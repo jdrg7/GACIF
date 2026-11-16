@@ -1,15 +1,12 @@
 import { CostLinesTable } from './CostLinesTable'
 import { formatCurrency } from '../../utils/formatters'
-import { CostCategory, type QuotationCostDetail, type QuotationDetail } from '../../types/quotation'
+import { CostCategory, type QuotationDetail } from '../../types/quotation'
 
 interface CustomsAgentCostsProps {
   quotation: QuotationDetail
-  canEdit?: boolean
-  onOverride?: (line: QuotationCostDetail) => void
-  onRevert?: (line: QuotationCostDetail) => void
 }
 
-export function CustomsAgentCosts({ quotation, canEdit, onOverride, onRevert }: CustomsAgentCostsProps) {
+export function CustomsAgentCosts({ quotation }: CustomsAgentCostsProps) {
   const lines = quotation.cost_details.filter((line) => line.category === CostCategory.CUSTOMS_AGENT)
   const taxAmount = lines.filter((line) => line.is_tax).reduce((sum, line) => sum + Number(line.amount_usd), 0)
 
@@ -19,9 +16,6 @@ export function CustomsAgentCosts({ quotation, canEdit, onOverride, onRevert }: 
       <CostLinesTable
         lines={lines}
         subtotal={Number(quotation.subtotal_customs_agent)}
-        canEdit={canEdit}
-        onOverride={onOverride}
-        onRevert={onRevert}
       />
       {taxAmount > 0 && (
         <p className="mt-2 text-xs text-gray-400">

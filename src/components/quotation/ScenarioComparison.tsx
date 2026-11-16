@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Button } from '../ui/Button'
 import { Select } from '../ui/Select'
 import { SERVICE_LEVEL_LABEL, ServiceLevel, TRANSPORT_LABEL, TransportType } from '../../utils/constants'
@@ -20,6 +21,8 @@ interface ScenarioComparisonProps {
   isFrozen: boolean
   isBusy: boolean
   error?: string | null
+  selectedTransportType: TransportType
+  onPreviewSelect: (transportType: TransportType) => void
   onSelect: (transportType: TransportType) => void
   onChangeServiceLevel: (serviceLevel: ServiceLevel) => void
 }
@@ -65,9 +68,19 @@ export function ScenarioComparison({
   isFrozen,
   isBusy,
   error,
+  selectedTransportType,
+  onPreviewSelect,
   onSelect,
   onChangeServiceLevel,
 }: ScenarioComparisonProps) {
+  const [referencePercentage, setReferencePercentage] = useState('5')
+  const parsedReferencePercentage = Number(referencePercentage)
+  const validReferencePercentage =
+    referencePercentage.trim() !== '' &&
+    Number.isFinite(parsedReferencePercentage) &&
+    parsedReferencePercentage >= 0 &&
+    parsedReferencePercentage <= 100
+
   const scenarios = [...quotation.scenarios].sort(
     (a, b) => MODE_ORDER.indexOf(a.transport_type) - MODE_ORDER.indexOf(b.transport_type),
   )
@@ -89,6 +102,20 @@ export function ScenarioComparison({
               : `Solo hay tarifa vigente para el modo ${TRANSPORT_LABEL[scenarios[0]!.transport_type]}.`}
           </p>
         </div>
+        <label className="flex items-center gap-2 text-sm text-gray-600">
+          <span>Referencia interna (% FOB)</span>
+          <input
+            aria-label="Porcentaje de referencia comercial"
+            type="number"
+            min="0"
+            max="100"
+            step="0.1"
+            value={referencePercentage}
+            onChange={(event) => setReferencePercentage(event.target.value)}
+            className="w-20 rounded-md border border-gray-300 px-2 py-1 text-right text-gray-900"
+          />
+          <span>%</span>
+        </label>
         {hasAir && (
           <div className="w-56">
             <Select
@@ -118,25 +145,48 @@ export function ScenarioComparison({
         )
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2" role="radiogroup" aria-label="Modo de transporte">
         {scenarios.map((scenario) => {
           const isSelected = scenario.transport_type === quotation.transport_type
+          const isPendingSelection = selectedTransportType === scenario.transport_type
+          const needsConfirmation = isPendingSelection && (!quotation.scenario_chosen || !isSelected)
           const isCheapest = scenario.id === cheapest.id
           const difference = Number(scenario.total_cost) - Number(cheapest.total_cost)
           const differencePct = Number(cheapest.total_cost) > 0 ? (difference / Number(cheapest.total_cost)) * 100 : 0
+          const fobReferenceAmount = Number(quotation.fob) * parsedReferencePercentage / 100
+          const freightAndCustomsCost =
+            Number(scenario.subtotal_consolidator) + Number(scenario.subtotal_customs_agent)
+          const excessAmount = freightAndCustomsCost - fobReferenceAmount
+          const exceedsReference = excessAmount > 0
 
           return (
             <div
               key={scenario.id}
-              className={`flex flex-col gap-3 rounded-lg border p-4 ${
-                isSelected ? 'border-blue-500 ring-1 ring-blue-300' : 'border-gray-200'
+              role="radio"
+              aria-checked={isPendingSelection}
+              tabIndex={0}
+              onClick={() => canEdit && onPreviewSelect(scenario.transport_type)}
+              onKeyDown={(event) => {
+                if (canEdit && (event.key === 'Enter' || event.key === ' ')) {
+                  event.preventDefault()
+                  onPreviewSelect(scenario.transport_type)
+                }
+              }}
+              className={`flex flex-col gap-3 rounded-lg border p-4 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${
+                canEdit ? 'cursor-pointer' : 'cursor-default'
+              } ${
+                isPendingSelection ? 'border-blue-500 ring-1 ring-blue-300' : 'border-gray-200 hover:border-blue-300'
               }`}
             >
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-base font-semibold text-gray-900">{TRANSPORT_LABEL[scenario.transport_type]}</span>
-                {isSelected && (
+                {isPendingSelection && (
                   <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700">
-                    {quotation.scenario_chosen ? 'Elegido' : 'Elegido (el más barato)'}
+                    {isSelected
+                      ? quotation.scenario_chosen
+                        ? 'Elegido'
+                        : 'Seleccionado (sugerido)'
+                      : 'Seleccionado'}
                   </span>
                 )}
                 {isCheapest && scenarios.length > 1 && (
@@ -168,13 +218,44 @@ export function ScenarioComparison({
                 ))}
               </div>
 
-              {canEdit && !isSelected && (
-                <Button type="button" variant="secondary" disabled={isBusy} onClick={() => onSelect(scenario.transport_type)}>
-                  Usar este modo
-                </Button>
-              )}
-              {canEdit && isSelected && !quotation.scenario_chosen && (
-                <Button type="button" variant="secondary" disabled={isBusy} onClick={() => onSelect(scenario.transport_type)}>
+              <div
+                className={`rounded-md px-3 py-2 text-xs ${
+                  !validReferencePercentage
+                    ? 'bg-gray-50 text-gray-700'
+                    : exceedsReference
+                      ? 'bg-amber-50 text-amber-800'
+                      : 'bg-green-50 text-green-800'
+                }`}
+              >
+                <p className="font-medium">Referencia comercial interna</p>
+                {validReferencePercentage ? (
+                  <>
+                    <p className="mt-1">
+                      Límite de referencia ({parsedReferencePercentage}% del FOB): {formatCurrency(fobReferenceAmount)}
+                    </p>
+                    <p>Flete del consolidador + agente aduanero: {formatCurrency(freightAndCustomsCost)}</p>
+                    <p className="mt-1 font-medium">
+                      {exceedsReference
+                        ? `El flete y el agente superan el límite por ${formatCurrency(excessAmount)}. Comercial puede revisar el porcentaje.`
+                        : `El flete y el agente están dentro del ${parsedReferencePercentage}% del FOB.`}
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-1">Ingresa un porcentaje válido igual o mayor que 0.</p>
+                )}
+                <p className="mt-1 text-current/80">Referencia para uso interno de Comercial; no modifica el precio de venta.</p>
+              </div>
+
+              {canEdit && needsConfirmation && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={isBusy}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    onSelect(scenario.transport_type)
+                  }}
+                >
                   Confirmar este modo
                 </Button>
               )}
